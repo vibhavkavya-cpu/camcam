@@ -57,11 +57,28 @@ struct CameraPreview: UIViewRepresentable {
     }
 }
 
+private final class FrameBufferBox: @unchecked Sendable {
+    private let lock = NSLock()
+    private var image: CIImage?
+
+    func set(_ newImage: CIImage) {
+        lock.lock()
+        image = newImage
+        lock.unlock()
+    }
+
+    func take() -> CIImage? {
+        lock.lock()
+        let current = image
+        lock.unlock()
+        return current
+    }
+}
+
 final class MetalPreviewView: MTKView {
     private let commandQueue: MTLCommandQueue?
     private let ciContext: CIContext
-    private let lock = NSLock()
-    private var latestImage: CIImage?
+    private let frameBox = FrameBufferBox()
 
     override init(frame frameRect: CGRect, device: MTLDevice?) {
         self.commandQueue = device?.makeCommandQueue()
@@ -79,20 +96,14 @@ final class MetalPreviewView: MTKView {
     }
 
     nonisolated func enqueueFrame(_ image: CIImage) {
-        lock.lock()
-        latestImage = image
-        lock.unlock()
+        frameBox.set(image)
         DispatchQueue.main.async { [weak self] in
             self?.draw()
         }
     }
 
     override func draw(_ rect: CGRect) {
-        lock.lock()
-        let image = latestImage
-        lock.unlock()
-
-        guard let image,
+        guard let image = frameBox.take(),
               let drawable = currentDrawable,
               let commandQueue,
               let commandBuffer = commandQueue.makeCommandBuffer() else {
