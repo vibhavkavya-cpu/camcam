@@ -15,6 +15,7 @@ jobs:
         run: xcodegen generate
       - name: Build Unsigned App
         run: |
+          set -o pipefail
           xcodebuild -project Digicam.xcodeproj \
             -scheme Digicam \
             -configuration Release \
@@ -22,7 +23,7 @@ jobs:
             -derivedDataPath build \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGNING_ALLOWED=NO | tee build.log | grep -E "(error:|warning:|BUILD )" || (grep -A 5 "error:" build.log && exit 1)
       - name: Package IPA
         run: |
           mkdir -p Payload
