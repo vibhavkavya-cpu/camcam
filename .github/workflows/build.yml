@@ -15,7 +15,6 @@ jobs:
         run: xcodegen generate
       - name: Build Unsigned App
         run: |
-          set -o pipefail
           if ! xcodebuild -project Digicam.xcodeproj \
             -scheme Digicam \
             -configuration Release \
@@ -24,8 +23,8 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO > build.log 2>&1; then
-            echo "=== BUILD FAILED: LAST 80 LINES ==="
-            tail -n 80 build.log
+            echo "=== SWIFT COMPILER ERRORS ==="
+            grep -E "error:" build.log || tail -n 60 build.log
             exit 1
           fi
           echo "** BUILD SUCCEEDED **"
