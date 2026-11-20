@@ -12,7 +12,7 @@ struct CameraPreview: UIViewRepresentable {
     }
 
     func makeUIView(context: Context) -> MetalPreviewView {
-        let view = MetalPreviewView(device: ImageProcessor.shared.mtlDevice)
+        let view = MetalPreviewView(frame: .zero, device: ImageProcessor.shared.mtlDevice)
         cameraManager.attachPreviewView(view)
 
         let tap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleTap(_:)))
@@ -63,10 +63,10 @@ final class MetalPreviewView: MTKView {
     private let lock = NSLock()
     private var latestImage: CIImage?
 
-    init(device: MTLDevice?) {
+    override init(frame frameRect: CGRect, device: MTLDevice?) {
         self.commandQueue = device?.makeCommandQueue()
         self.ciContext = ImageProcessor.shared.ciContext
-        super.init(frame: .zero, device: device)
+        super.init(frame: frameRect, device: device)
         self.framebufferOnly = false
         self.isPaused = true
         self.enableSetNeedsDisplay = false
@@ -78,7 +78,7 @@ final class MetalPreviewView: MTKView {
         fatalError("init(coder:) has not been implemented")
     }
 
-    func enqueueFrame(_ image: CIImage) {
+    nonisolated func enqueueFrame(_ image: CIImage) {
         lock.lock()
         latestImage = image
         lock.unlock()
@@ -117,19 +117,14 @@ final class MetalPreviewView: MTKView {
                 .translatedBy(x: offsetX / scale, y: offsetY / scale))
             .cropped(to: CGRect(origin: .zero, size: targetSize))
 
-        let destination = CIRenderDestination(
-            width: Int(targetSize.width),
-            height: Int(targetSize.height),
-            pixelFormat: colorPixelFormat,
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        ciContext.render(
+            transformed,
+            to: drawable.texture,
             commandBuffer: commandBuffer,
-            mtlTextureProvider: { () -> MTLTexture in
-                drawable.texture
-            }
+            bounds: CGRect(origin: .zero, size: targetSize),
+            colorSpace: colorSpace
         )
-
-        do {
-            try ciContext.startTask(toRender: transformed, from: transformed.extent, to: destination, at: .zero)
-        } catch {}
 
         commandBuffer.present(drawable)
         commandBuffer.commit()
