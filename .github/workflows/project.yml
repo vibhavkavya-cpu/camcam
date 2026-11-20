@@ -1,26 +1,35 @@
-name: Digicam
-options:
-  bundleIdPrefix: com.retro
-  deploymentTarget:
-    iOS: "17.0"
-targets:
-  Digicam:
-    type: application
-    platform: iOS
-    sources:
-      - path: Sources
-    settings:
-      base:
-        SWIFT_VERSION: "6.0"
-        PRODUCT_BUNDLE_IDENTIFIER: com.retro.digicam
-    info:
-      path: Info.plist
-      properties:
-        CFBundleDisplayName: Digicam
-        UILaunchScreen:
-          UIColorName: ""
-        NSCameraUsageDescription: "Digicam needs camera access to capture photographs."
-        NSPhotoLibraryAddUsageDescription: "Digicam saves captured photos to your camera roll."
-        NSPhotoLibraryUsageDescription: "Digicam accesses your library to save and export photos."
-        UISupportedInterfaceOrientations:
-          - UIInterfaceOrientationPortrait
+name: Build Digicam IPA
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate Project
+        run: xcodegen generate
+      - name: Build Unsigned App
+        run: |
+          xcodebuild -project Digicam.xcodeproj \
+            -scheme Digicam \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+      - name: Package IPA
+        run: |
+          mkdir -p Payload
+          cp -r build/Build/Products/Release-iphoneos/Digicam.app Payload/
+          zip -r Digicam.ipa Payload
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Digicam-IPA
+          path: Digicam.ipa
