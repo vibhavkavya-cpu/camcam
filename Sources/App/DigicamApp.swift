@@ -1,6 +1,7 @@
 import SwiftUI
 
 @main
+@MainActor
 struct DigicamApp: App {
     @StateObject private var appState = AppState()
     @Environment(\.scenePhase) private var scenePhase
