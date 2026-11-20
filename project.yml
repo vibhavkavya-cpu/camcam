@@ -11,12 +11,15 @@ targets:
       - path: Sources
     settings:
       base:
-        SWIFT_VERSION: "6.0"
+        SWIFT_VERSION: "5.0"
         PRODUCT_BUNDLE_IDENTIFIER: com.retro.digicam
+        GENERATE_INFOPLIST_FILE: NO
     info:
       path: Info.plist
       properties:
         CFBundleDisplayName: Digicam
+        CFBundleShortVersionString: "1.0"
+        CFBundleVersion: "1"
         UILaunchScreen:
           UIColorName: ""
         NSCameraUsageDescription: "Digicam needs camera access to capture photographs."
