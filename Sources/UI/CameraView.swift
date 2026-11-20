@@ -40,7 +40,10 @@ struct CameraView: View {
                         if let point = appState.cameraManager.focusIndicatorPoint {
                             FocusReticleView(
                                 point: point,
-                                exposureBias: $appState.cameraManager.exposureBias,
+                                exposureBias: Binding(
+                                    get: { appState.cameraManager.exposureBias },
+                                    set: { appState.cameraManager.setExposureBias($0) }
+                                ),
                                 minBias: appState.cameraManager.capabilities.minExposureBias,
                                 maxBias: appState.cameraManager.capabilities.maxExposureBias,
                                 onBiasChanged: { newBias in
