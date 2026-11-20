@@ -16,14 +16,19 @@ jobs:
       - name: Build Unsigned App
         run: |
           set -o pipefail
-          xcodebuild -project Digicam.xcodeproj \
+          if ! xcodebuild -project Digicam.xcodeproj \
             -scheme Digicam \
             -configuration Release \
             -sdk iphoneos \
             -derivedDataPath build \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO | tee build.log | grep -E "(error:|warning:|BUILD )" || (grep -A 5 "error:" build.log && exit 1)
+            CODE_SIGNING_ALLOWED=NO > build.log 2>&1; then
+            echo "=== BUILD FAILED: LAST 80 LINES ==="
+            tail -n 80 build.log
+            exit 1
+          fi
+          echo "** BUILD SUCCEEDED **"
       - name: Package IPA
         run: |
           mkdir -p Payload
